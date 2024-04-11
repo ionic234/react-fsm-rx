@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "deep-equal": "^2.2.3",
-    "fsm-rx": "^1.0.1",
+    "fsm-rx": "^1.1.0-alpha.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rxjs": "^7.8.1"
