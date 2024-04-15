@@ -3,7 +3,7 @@ import { BaseStateData, CurrentStateInfo, OnEnterStateChanges } from "fsm-rx";
 import { useEffect } from 'react';
 import { takeUntil, timer } from "rxjs";
 import './TrafficLightSimple.scss';
-import useFsmRx, { FsmRxProps } from "../../hooks/use-fsm-rx";
+import useFsmRx, { FsmRxProps } from "../../../../hooks/use-fsm-rx";
 
 type TrafficLightStates = "go" | "prepareToStop" | "stop";
 

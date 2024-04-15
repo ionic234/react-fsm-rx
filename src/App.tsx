@@ -1,7 +1,7 @@
 /*eslint-disable*/
 
 import './App.scss';
-import { TrafficLightSimple } from "./components/TrafficLightSimple/TrafficLightSimple";
+import { TrafficLightSimple } from "./stories/traffic-light-simple/components/traffic-light-simple/TrafficLightSimple";
 import { FsmRxDebugSet } from "./components/fsm-rx-debug-set/fsm-rx-debug-set";
 function App() {
 
@@ -10,7 +10,6 @@ function App() {
       <FsmRxDebugSet>
         <TrafficLightSimple />
       </FsmRxDebugSet>
-
     </>
   );
 

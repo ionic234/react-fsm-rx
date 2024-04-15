@@ -14,6 +14,8 @@ export class ReactFsmRx<
         super.changeState(stateData);
     }
 
+    declare public readonly isInDevMode: boolean;
+
     public override get currentState$(): Observable<CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>> {
         return super.currentState$;
     }
@@ -37,5 +39,6 @@ export class ReactFsmRx<
     public override destroy(): void {
         super.destroy();
     }
+
 
 }
