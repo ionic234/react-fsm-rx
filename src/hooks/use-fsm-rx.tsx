@@ -1,7 +1,8 @@
+/*eslint-disable*/
 import { BaseFsmConfig, BaseStateData, CanLeaveToStatesMap, CurrentStateInfo, DebugLogEntry, FSMInitStateData, FsmConfig, StateMap } from "fsm-rx";
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState, MutableRefObject } from 'react';
 import { ReactFsmRx } from "../classes/react-fsm-rx";
-import { takeUntil } from "rxjs";
+import { takeUntil, Subscription } from "rxjs";
 import { FsmRxContext } from "./fsm-rx-context";
 import transformDebugLogService from "../services/transform-debug-log";
 
@@ -39,13 +40,76 @@ export default function useFsmRx<
     isInDevMode?: boolean): [FSMInitStateData | TStateData, React.MutableRefObject<ReactFsmRx<TState, TStateData, TCanLeaveToStatesMap>>] {
 
     const { setStateDiagramDefinition, setDebugLog, debugLogKeys } = useContext(FsmRxContext);
+
+    // Variables describing the state of the fsm. 
+    const fsmRef: MutableRefObject<ReactFsmRx<TState, TStateData, TCanLeaveToStatesMap>> = useRef(new ReactFsmRx(stateMap, fsmConfig, isInDevMode));
+    const hasCleanedRef: MutableRefObject<boolean> = useRef(false);
+    const subscription: MutableRefObject<Subscription | undefined> = useRef(undefined);
+
+
+    const [stateData, setStateData] = useState<TStateData | FSMInitStateData>({ state: "FSMInit" });
+
+    const createFsm = useCallback(() => {
+        fsmRef.current = new ReactFsmRx(stateMap, fsmConfig, isInDevMode);
+    }, [fsmRef]);
+
+    const subscribeToFsm = useCallback(() => {
+        subscription.current = fsmRef.current.stateData$.pipe(takeUntil(fsmRef.current.destroy$)).subscribe((stateData: TStateData | FSMInitStateData) => {
+            if (setStateDiagramDefinition) { setStateDiagramDefinition(fsmRef.current.getStateDiagramDefinition(stateData.state)); }
+            if (setDebugLog && debugLogKeys) { setDebugLog(transformDebugLogService.processDebugLog(fsmRef.current.debugLog, debugLogKeys)); }
+            setStateData(stateData);
+        });
+    }, [fsmRef]);
+
+
+    useEffect(() => {
+        if (hasCleanedRef.current) {
+            createFsm();
+            hasCleanedRef.current = false;
+        }
+
+        if (!subscription.current) {
+            fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>) => {
+                if (currentStateInfo.state === "FSMInit") {
+                    subscribeToFsm();
+                }
+            });
+        }
+
+        return () => {
+            fsmRef.current.destroy();
+            subscription.current = undefined;
+            hasCleanedRef.current = true;
+        };
+
+    }, [fsmRef, subscription, hasCleanedRef]);
+
+    useEffect(() => {
+        if (!props.fsmConfig) { return; }
+    }, [props.fsmConfig]);
+
+
+
+    return [stateData, fsmRef];
+
+}
+
+/*
+{
+
+    const { setStateDiagramDefinition, setDebugLog, debugLogKeys } = useContext(FsmRxContext);
     const fsmRef = useRef(new ReactFsmRx(stateMap, fsmConfig, isInDevMode));
+
     const hasCleanedRef = useRef(false);
     const [stateData, setStateData] = useState<TStateData | FSMInitStateData>({ state: "FSMInit" });
 
+    const createFsm = useCallback(() => {
+        fsmRef.current = new ReactFsmRx(stateMap, fsmConfig, isInDevMode);
+    }, [fsmRef]);
+
     useEffect(() => {
-        if (hasCleanedRef) {
-            fsmRef.current = new ReactFsmRx(stateMap, fsmConfig, isInDevMode);
+        if (hasCleanedRef.current) {
+            createFsm();
             hasCleanedRef.current = false;
         }
 
@@ -60,7 +124,6 @@ export default function useFsmRx<
         });
 
         return () => {
-            // Will call unsubscribe on currentFsmRef.stateData$;
             fsmRef.current.destroy();
             hasCleanedRef.current = true;
         };
@@ -69,7 +132,6 @@ export default function useFsmRx<
 
     useEffect(() => {
         if (!props.fsmConfig) { return; }
-        //console.log("the props yo!!!", props.fsmConfig);
     }, [props.fsmConfig]);
 
 
@@ -77,3 +139,4 @@ export default function useFsmRx<
     return [stateData, fsmRef];
 
 }
+*/
