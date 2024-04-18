@@ -24,7 +24,7 @@ export function FsmRxDebugSet(props: FsmRxDebugSetProps) {
     }, [props.debugLogKeys]);
 
     return (
-        <>
+        <div className="fsm-rx-debug-set">
             <div className="hero-content">
                 <FsmRxContext.Provider value={{ setStateDiagramDefinition, setDebugLog, debugLogKeys }}>
                     {props.children}
@@ -32,6 +32,6 @@ export function FsmRxDebugSet(props: FsmRxDebugSetProps) {
                 {stateDiagramDefinition && <FsmRxStateDiagram stateDiagramDefinition={stateDiagramDefinition} />}
             </div>
             {debugLog && <FsmRxDebugLog debugLog={debugLog} />}
-        </>
+        </div>
     );
 }

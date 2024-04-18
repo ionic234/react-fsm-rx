@@ -54,7 +54,6 @@ export default function useFsmRx<
 
         if (!subscription.current) {
             fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>) => {
-                console.log(currentStateInfo.state);
                 if (currentStateInfo.state === "FSMInit") { subscribeToFsm(); }
             });
         }

@@ -23,7 +23,7 @@ export function FsmRxStateDiagram(props: FsmRxStateDiagramProps) {
         return (() => {
             currentDestroyRef.next();
         });
-    }, []);
+    }, [destroyRef]);
 
     useEffect(() => {
 

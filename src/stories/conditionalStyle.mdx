@@ -1,0 +1,50 @@
+export const docsStyle = 
+<style>
+  {`
+    h1{
+      color:red !important;
+    }
+  `}
+</style>
+
+export function docsStyle2(color = "red"){
+    return(
+        <style>
+        {`
+            h1{
+            color:${color} !important;
+            }
+        `}
+        </style>
+    )
+} 
+
+export function getIntro(language = "angular"){
+    return (
+        <p>This is the intro text for the language {language}</p>
+    )
+}
+
+export const h2Style = (
+<style>
+  {`
+    h2{
+      color:pink !important;
+    }
+  `}
+</style>
+)
+
+export const h3Style = ( 
+    <style>
+  {`
+    h3{
+      color:green !important;
+    }
+  `}
+</style>
+)
+
+export const stylesCombined = (
+    [h2Style, h3Style]
+)

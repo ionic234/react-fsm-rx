@@ -2,7 +2,7 @@
 import { BaseStateData, CurrentStateInfo, OnEnterStateChanges } from "fsm-rx";
 import { useEffect } from 'react';
 import { takeUntil, timer } from "rxjs";
-import './TrafficLightSimple.scss';
+import './traffic-light-simple.scss';
 import useFsmRx, { FsmRxProps } from "../../../../hooks/use-fsm-rx";
 
 type TrafficLightStates = "go" | "prepareToStop" | "stop";
@@ -47,6 +47,14 @@ export function TrafficLightSimple(props: FsmRxProps<TrafficLightStates, Traffic
         props
     );
 
+    useEffect(() => {
+        fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap>) => {
+            if (currentStateInfo.state === "FSMInit") {
+                fsmRef.current.changeState({ state: "go", trafficLightTimings: { go: 7000, prepareToStop: 3000, stop: 10000 } });
+            }
+        });
+    }, [fsmRef]);
+
     function handleEnterState(onEnterStateChanges: OnEnterStateChanges<TrafficLightStates, TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap>): void {
 
         const { enteringStateInfo } = onEnterStateChanges;
@@ -62,14 +70,6 @@ export function TrafficLightSimple(props: FsmRxProps<TrafficLightStates, Traffic
                 });
             });
     }
-
-    useEffect(() => {
-        fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap>) => {
-            if (currentStateInfo.state === "FSMInit") {
-                fsmRef.current.changeState({ state: "go", trafficLightTimings: { go: 7000, prepareToStop: 3000, stop: 10000 } });
-            }
-        });
-    }, [fsmRef]);
 
     return (
         <div className="traffic-light-housing">

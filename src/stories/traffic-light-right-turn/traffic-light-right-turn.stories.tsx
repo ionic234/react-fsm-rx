@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { TrafficLightSimple } from "./components/traffic-light-simple/traffic-light-simple";
+import { TrafficLightRightTurn } from "./components/traffic-light-right-turn/Traffic-Light-right-turn";
 import { FsmRxDebugSet } from '../../components/fsm-rx-debug-set/fsm-rx-debug-set';
 
-const meta: Meta<typeof TrafficLightSimple> = {
-  title: 'Examples/1. Traffic Light Simple',
-  component: TrafficLightSimple,
+const meta: Meta<typeof TrafficLightRightTurn> = {
+  title: 'Examples/2. Traffic Light Right Turn',
+  component: TrafficLightRightTurn,
   decorators: [
     (Story) => (
       <FsmRxDebugSet>

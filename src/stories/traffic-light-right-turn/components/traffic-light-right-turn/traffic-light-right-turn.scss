@@ -1,0 +1,127 @@
+ul {
+  margin: 0px;
+  padding: 0px;
+  display: flex;
+  flex-direction: column;
+  background-color: gray;
+  list-style-type: none;
+  width: 120px;
+  padding-top: 10px;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid black;
+  border-radius: 10px;
+
+  li {
+    display: flex;
+    margin-bottom: 10px;
+
+    span {
+      display: block;
+      width: 100px;
+      height: 100px;
+      border-radius: 60px;
+      filter: brightness(0.01);
+
+      &.green {
+        background-color: #0eff00;
+      }
+
+      &.amber {
+        background-color: yellow;
+      }
+
+      &.red {
+        background-color: red;
+      }
+
+      &.on {
+        filter: brightness(1)
+      }
+    }
+  }
+}
+
+
+.traffic-light-housing {
+
+  display: flex;
+  align-items: flex-end;
+
+  ul,
+  .right-turn {
+    display: flex;
+    background-color: gray;
+    width: 120px;
+    align-items: center;
+    border: 4px solid black;
+  }
+
+  ul {
+    margin: 0px;
+    padding: 0px;
+    flex-direction: column;
+    list-style-type: none;
+    padding-top: 10px;
+    border-radius: 10px 10px 0px 10px;
+    justify-content: center;
+
+    li {
+      display: flex;
+      margin-bottom: 10px;
+    }
+
+    span {
+      border-radius: 60px;
+      height: 100px;
+    }
+
+  }
+
+  span {
+    display: block;
+    width: 100px;
+    filter: brightness(0.01);
+
+    &.on {
+      filter: brightness(1)
+    }
+  }
+
+  .green {
+    background-color: #0eff00;
+  }
+
+  .amber {
+    background-color: yellow;
+  }
+
+  .red {
+    background-color: red;
+  }
+
+  .right-turn {
+    border-left-width: 0px;
+    border-radius: 0px 10px 10px 0px;
+    height: 120px;
+    position: relative;
+    left: -4px;
+
+    span {
+      margin-left: 10px;
+      height: 28px;
+      width: 60px;
+
+      &::after {
+        position: absolute;
+        top: -15px;
+        right: -40px;
+        content: "";
+        display: block;
+        border-top: 30px solid transparent;
+        border-bottom: 30px solid transparent;
+        border-left: 40px solid #0eff00;
+      }
+    }
+  }
+}

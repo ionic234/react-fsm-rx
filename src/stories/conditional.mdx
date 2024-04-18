@@ -1,0 +1,31 @@
+import { Meta } from "@storybook/blocks";
+import { docsStyle, docsStyle2, getIntro, stylesCombined} from "./conditionalStyle.mdx"
+import React, { useState } from 'react';
+
+<Meta title="Conditional and import tests" />
+
+
+export const LanguageSelector = () => {
+  const [language, setLanguage] = useState("angular");
+
+  return (
+    <>
+    <article>
+      <h1>Creating Finite State Machines with FsmRx!!!</h1>
+      <h2>i am a h2</h2>
+      <h3>i am a h3</h3>
+      <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+        <option value="angular">Angular</option>
+        <option value="react">React</option>
+      </select>
+      {getIntro(language)}
+    </article>
+    {docsStyle2("blue")}
+    {stylesCombined}
+    </>
+  );
+};
+
+
+<LanguageSelector />
+
