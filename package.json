@@ -12,6 +12,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@types/deep-equal": "^1.0.4",
     "deep-equal": "^2.2.3",
     "fsm-rx": "^1.1.0-alpha.1",
     "mermaid": "^10.9.0",

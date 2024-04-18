@@ -1,5 +1,22 @@
-import { BaseStateData, CanLeaveToStatesMap, ChangeStateData, CurrentStateInfo, FSMInit, FsmRxConcrete, DebugLogEntry } from "fsm-rx";
+/*eslint-disable*/
+
+import deepEqual from "deep-equal";
+import { BaseStateData, CanLeaveToStatesMap, ChangeStateData, CurrentStateInfo, FSMInit, FsmRxConcrete, DebugLogEntry, FsmConfig, BaseFsmConfig, StateOverride } from "fsm-rx";
 import { Observable, Subject } from "rxjs";
+
+
+type BaseConfig = {
+    outputStateDiagramDefinition: boolean,
+    outputDebugLog: boolean;
+};
+
+export type BaseFsmComponentConfig = BaseFsmConfig & BaseConfig;
+
+export type FsmComponentConfig<
+    TState extends string,
+    TStateData extends BaseStateData<TState>,
+    TCanLeaveToStatesMap extends CanLeaveToStatesMap<TState>
+> = FsmConfig<TState, TStateData, TCanLeaveToStatesMap> & BaseConfig;
 
 
 export class ReactFsmRx<
@@ -14,13 +31,11 @@ export class ReactFsmRx<
         super.changeState(stateData);
     }
 
-    declare public readonly isInDevMode: boolean;
-
     public override get currentState$(): Observable<CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>> {
         return super.currentState$;
     }
 
-    public override getStateDiagramDefinition(highlightState?: TState | FSMInit | undefined): string {
+    public override getStateDiagramDefinition(highlightState?: TState | FSMInit): string {
         return super.getStateDiagramDefinition(highlightState);
     }
 
@@ -40,5 +55,60 @@ export class ReactFsmRx<
         super.destroy();
     }
 
+    declare public resolvedFsmConfig: FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>;
+
+
+    public updateFsmConfig(fsmConfig: Partial<FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>>): [FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>, FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>] {
+        const previousConfig: FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap> = this.resolvedFsmConfig;
+        this.resolvedFsmConfig = this.extractFsmConfig(
+            {
+                ...this.resolvedFsmConfig,
+                ...fsmConfig
+            }, this.isInDevMode
+        );
+        return [previousConfig, this.resolvedFsmConfig];
+    }
+
+    /**
+     * An override of the function that constructs the FsmConfig object by combining the supplied fsmConfig partial with default values.  
+     * This override adds additional options relevant for components. 
+     * @param fsmConfig The partial configuration object supplied by the user.
+     * @param isInDevMode A boolean which determines whether the application in running in debug mode or not.
+     * @returns A whole FSMConfig object constructed by combining the supplied fsmConfig partial with default values.
+     */
+    protected override extractFsmConfig(
+        fsmConfig: Partial<FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>>,
+        isInDevMode: boolean
+    ): FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap> {
+        return {
+            ...super.extractFsmConfig(fsmConfig, isInDevMode),
+            outputStateDiagramDefinition: fsmConfig.outputStateDiagramDefinition ?? (isInDevMode ? true : false),
+            outputDebugLog: fsmConfig.outputDebugLog ?? (isInDevMode ? true : false),
+        };
+    }
+
+    /**
+   * Determines if an override value has been given and executes the override if it has
+   * @param previousStateOverride The previous value for stateOverride
+   * @param newStateOverride The new value for stateOverride. 
+   */
+    public handlePossibleStateOverrideChange(
+        previousStateOverride: StateOverride<TState, TStateData, TCanLeaveToStatesMap> | false,
+        newStateOverride: StateOverride<TState, TStateData, TCanLeaveToStatesMap> | false
+    ): void {
+        if (!newStateOverride) { return; }
+        if (!deepEqual(previousStateOverride, newStateOverride, { strict: true })) {
+            this.override$.next();
+            this.overrideCurrentState(newStateOverride, this.resolvedFsmConfig.resetDebugLogOnOverride);
+        }
+    }
+
+    public override capDebugLogLength(maxLength: number): void {
+        return super.capDebugLogLength(maxLength);
+    }
+
+    public override clearStateDiagramDefinition(): void {
+        return super.clearStateDiagramDefinition();
+    }
 
 }

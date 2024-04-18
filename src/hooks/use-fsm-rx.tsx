@@ -1,24 +1,10 @@
 /*eslint-disable*/
-import { BaseFsmConfig, BaseStateData, CanLeaveToStatesMap, CurrentStateInfo, DebugLogEntry, FSMInitStateData, FsmConfig, StateMap } from "fsm-rx";
-import { useCallback, useContext, useEffect, useRef, useState, MutableRefObject } from 'react';
-import { ReactFsmRx } from "../classes/react-fsm-rx";
-import { takeUntil, Subscription } from "rxjs";
-import { FsmRxContext } from "./fsm-rx-context";
+import { BaseStateData, CanLeaveToStatesMap, CurrentStateInfo, DebugLogEntry, FSMInit, FSMInitStateData, FsmConfig, StateMap } from "fsm-rx";
+import { MutableRefObject, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Subscription, takeUntil } from "rxjs";
+import { FsmComponentConfig, ReactFsmRx } from "../classes/react-fsm-rx";
 import transformDebugLogService from "../services/transform-debug-log";
-
-type BaseConfig = {
-    outputStateDiagramDefinition: boolean,
-    outputDebugLog: boolean;
-};
-
-export type BaseFsmComponentConfig = BaseFsmConfig & BaseConfig;
-
-export type FsmComponentConfig<
-    TState extends string,
-    TStateData extends BaseStateData<TState>,
-    TCanLeaveToStatesMap extends CanLeaveToStatesMap<TState>
-> = FsmConfig<TState, TStateData, TCanLeaveToStatesMap> & BaseConfig;
-
+import { FsmRxContext } from "./fsm-rx-context";
 
 export type FsmRxProps<
     TState extends string,
@@ -43,9 +29,8 @@ export default function useFsmRx<
 
     // Variables describing the state of the fsm. 
     const fsmRef: MutableRefObject<ReactFsmRx<TState, TStateData, TCanLeaveToStatesMap>> = useRef(new ReactFsmRx(stateMap, fsmConfig, isInDevMode));
-    const hasCleanedRef: MutableRefObject<boolean> = useRef(false);
+    const hasUnmountedRef: MutableRefObject<boolean> = useRef(false);
     const subscription: MutableRefObject<Subscription | undefined> = useRef(undefined);
-
 
     const [stateData, setStateData] = useState<TStateData | FSMInitStateData>({ state: "FSMInit" });
 
@@ -55,88 +40,67 @@ export default function useFsmRx<
 
     const subscribeToFsm = useCallback(() => {
         subscription.current = fsmRef.current.stateData$.pipe(takeUntil(fsmRef.current.destroy$)).subscribe((stateData: TStateData | FSMInitStateData) => {
-            if (setStateDiagramDefinition) { setStateDiagramDefinition(fsmRef.current.getStateDiagramDefinition(stateData.state)); }
-            if (setDebugLog && debugLogKeys) { setDebugLog(transformDebugLogService.processDebugLog(fsmRef.current.debugLog, debugLogKeys)); }
+            if (fsmRef.current.resolvedFsmConfig.outputStateDiagramDefinition && setStateDiagramDefinition) { setStateDiagramDefinition(fsmRef.current.getStateDiagramDefinition(stateData.state)); }
+            if (fsmRef.current.resolvedFsmConfig.outputDebugLog && setDebugLog && debugLogKeys) { setDebugLog(transformDebugLogService.processDebugLog(fsmRef.current.debugLog, debugLogKeys)); }
             setStateData(stateData);
         });
-    }, [fsmRef]);
-
+    }, [fsmRef, subscription]);
 
     useEffect(() => {
-        if (hasCleanedRef.current) {
+        if (hasUnmountedRef.current) {
             createFsm();
-            hasCleanedRef.current = false;
+            hasUnmountedRef.current = false;
         }
 
         if (!subscription.current) {
             fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>) => {
-                if (currentStateInfo.state === "FSMInit") {
-                    subscribeToFsm();
-                }
+                console.log(currentStateInfo.state);
+                if (currentStateInfo.state === "FSMInit") { subscribeToFsm(); }
             });
         }
 
         return () => {
             fsmRef.current.destroy();
             subscription.current = undefined;
-            hasCleanedRef.current = true;
+            hasUnmountedRef.current = true;
         };
 
-    }, [fsmRef, subscription, hasCleanedRef]);
+    }, [fsmRef, subscription, hasUnmountedRef]);
 
     useEffect(() => {
         if (!props.fsmConfig) { return; }
-    }, [props.fsmConfig]);
+        const [previousConfig, newConfig] = fsmRef.current.updateFsmConfig(props.fsmConfig);
 
+        fsmRef.current.handlePossibleStateOverrideChange(previousConfig.stateOverride, newConfig.stateOverride);
 
-
-    return [stateData, fsmRef];
-
-}
-
-/*
-{
-
-    const { setStateDiagramDefinition, setDebugLog, debugLogKeys } = useContext(FsmRxContext);
-    const fsmRef = useRef(new ReactFsmRx(stateMap, fsmConfig, isInDevMode));
-
-    const hasCleanedRef = useRef(false);
-    const [stateData, setStateData] = useState<TStateData | FSMInitStateData>({ state: "FSMInit" });
-
-    const createFsm = useCallback(() => {
-        fsmRef.current = new ReactFsmRx(stateMap, fsmConfig, isInDevMode);
-    }, [fsmRef]);
-
-    useEffect(() => {
-        if (hasCleanedRef.current) {
-            createFsm();
-            hasCleanedRef.current = false;
+        let forceLogUpdate = false;
+        if (setDebugLog && debugLogKeys && previousConfig.debugLogBufferCount !== newConfig.debugLogBufferCount) {
+            fsmRef.current.capDebugLogLength(newConfig.debugLogBufferCount);
+            forceLogUpdate = newConfig.outputDebugLog;
         }
 
-        fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>) => {
-            if (currentStateInfo.state === "FSMInit") {
-                fsmRef.current.stateData$.pipe(takeUntil(fsmRef.current.destroy$)).subscribe((stateData: TStateData | FSMInitStateData) => {
-                    if (setStateDiagramDefinition) { setStateDiagramDefinition(fsmRef.current.getStateDiagramDefinition(stateData.state)); }
-                    if (setDebugLog && debugLogKeys) { setDebugLog(transformDebugLogService.processDebugLog(fsmRef.current.debugLog, debugLogKeys)); }
-                    setStateData(stateData);
+        if (setDebugLog && debugLogKeys && (forceLogUpdate || previousConfig.outputDebugLog !== newConfig.outputDebugLog)) {
+            setDebugLog(newConfig.outputDebugLog ? transformDebugLogService.processDebugLog(fsmRef.current.debugLog, debugLogKeys) : undefined);
+        }
+
+        let forceStateDiagram = false;
+        if (setStateDiagramDefinition && newConfig.outputStateDiagramDefinition && previousConfig.stateDiagramDirection !== newConfig.stateDiagramDirection) {
+            fsmRef.current.clearStateDiagramDefinition();
+            forceStateDiagram = newConfig.outputDebugLog;
+        }
+
+        if (setStateDiagramDefinition && (forceStateDiagram || previousConfig.outputStateDiagramDefinition !== newConfig.outputStateDiagramDefinition)) {
+            if (!newConfig.outputStateDiagramDefinition) {
+                fsmRef.current.clearStateDiagramDefinition();
+                setStateDiagramDefinition(undefined);
+            } else {
+                fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>) => {
+                    setStateDiagramDefinition(fsmRef.current.getStateDiagramDefinition(currentStateInfo.state as TState | FSMInit));
                 });
             }
-        });
+        }
 
-        return () => {
-            fsmRef.current.destroy();
-            hasCleanedRef.current = true;
-        };
-
-    }, [fsmRef]);
-
-    useEffect(() => {
-        if (!props.fsmConfig) { return; }
-    }, [props.fsmConfig]);
-
-
+    }, [props.fsmConfig, fsmRef]);
 
     return [stateData, fsmRef];
-
 }
-*/
