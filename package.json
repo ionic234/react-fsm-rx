@@ -14,7 +14,7 @@
   "dependencies": {
     "@types/deep-equal": "^1.0.4",
     "deep-equal": "^2.2.3",
-    "fsm-rx": "^1.1.0-alpha.1",
+    "fsm-rx": "^1.1.0-alpha.2",
     "mermaid": "^10.9.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -1,16 +1,16 @@
-
-import { BaseStateData, CurrentStateInfo, OnEnterStateChanges } from "fsm-rx";
-import { useEffect } from 'react';
+/*eslint-disable*/
+import { BaseStateData, CurrentStateInfo, FSMInitStateData, OnEnterStateChanges } from "fsm-rx";
+import { useCallback, useEffect } from 'react';
 import { takeUntil, timer } from "rxjs";
-import './traffic-light-conditional-init.scss';
 import useFsmRx, { FsmRxProps } from "../../../../hooks/use-fsm-rx";
+import fsmRepository from "../../../../services/fsm-repository";
+import './traffic-light-synchronized.scss';
 
 type TrafficLightStates = "go" | "prepareToStop" | "stop";
 
 type TrafficLightTimings = {
     go: 7000,
-    prepareToStop: 3000,
-    stop: 10000;
+    prepareToStop: 3000;
 };
 
 interface TrafficLightData extends BaseStateData<TrafficLightStates> {
@@ -24,12 +24,12 @@ export type TrafficLightCanLeaveToMap = {
     stop: "go";
 };
 
-interface TrafficLightConditionalInitProps extends FsmRxProps<TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap> {
+interface TrafficLightSynchronizedProps extends FsmRxProps<TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap> {
     initState: Extract<TrafficLightStates, "stop" | "go">;
+    fsmToBindTo: string;
 }
 
-
-export function TrafficLightConditionalInit(props: TrafficLightConditionalInitProps) {
+export function TrafficLightSynchronized(props: TrafficLightSynchronizedProps) {
 
     const [stateData, fsmRef] = useFsmRx<TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap>(
         {
@@ -46,21 +46,39 @@ export function TrafficLightConditionalInit(props: TrafficLightConditionalInitPr
             stop: {
                 canEnterFromStates: { prepareToStop: true, FSMInit: true },
                 canLeaveToStates: { go: true },
-                onEnter: handleEnterState
             }
         },
-        props
+        props,
+        {
+            name: "trafficLight"
+        }
     );
+
+    const bindToExternalFsm = useCallback((fsmToBindTo: string): void => {
+        fsmRepository.getFsmData$(fsmToBindTo, fsmRef.current.destroy$).subscribe((externalStateData: FSMInitStateData | BaseStateData<string> | undefined) => {
+            fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap>) => {
+                if (externalStateData?.state === "stop" && currentStateInfo.state === "stop") {
+                    const { stateData, canLeaveTo } = currentStateInfo;
+                    fsmRef.current.changeState({
+                        ...stateData,
+                        state: canLeaveTo[0]
+                    });
+                }
+            });
+
+        });
+    }, [fsmRef]);
 
     useEffect(() => {
         fsmRef.current.currentState$.subscribe((currentStateInfo: CurrentStateInfo<TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap>) => {
             if (currentStateInfo.state === "FSMInit") {
-                fsmRef.current.changeState({ state: props.initState, trafficLightTimings: { go: 7000, prepareToStop: 3000, stop: 10000 } });
+                if (props.fsmToBindTo !== "") { bindToExternalFsm(props.fsmToBindTo); }
+                fsmRef.current.changeState({ state: props.initState, trafficLightTimings: { go: 7000, prepareToStop: 3000 } });
             }
         });
-    }, [fsmRef, props.initState]);
+    }, [fsmRef, props.initState, props.fsmToBindTo, bindToExternalFsm]);
 
-    function handleEnterState(onEnterStateChanges: OnEnterStateChanges<TrafficLightStates, TrafficLightStates, TrafficLightData, TrafficLightCanLeaveToMap>): void {
+    function handleEnterState(onEnterStateChanges: OnEnterStateChanges<TrafficLightStates, "go" | "prepareToStop", TrafficLightData, TrafficLightCanLeaveToMap>): void {
 
         const { enteringStateInfo } = onEnterStateChanges;
         const { stateData, state, canLeaveTo } = enteringStateInfo;

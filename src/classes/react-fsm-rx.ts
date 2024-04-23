@@ -1,13 +1,14 @@
 /*eslint-disable*/
 
 import deepEqual from "deep-equal";
-import { BaseStateData, CanLeaveToStatesMap, ChangeStateData, CurrentStateInfo, FSMInit, FsmRxConcrete, DebugLogEntry, FsmConfig, BaseFsmConfig, StateOverride } from "fsm-rx";
+import { BaseStateData, CanLeaveToStatesMap, ChangeStateData, CurrentStateInfo, FSMInit, FsmRxConcrete, DebugLogEntry, FsmConfig, BaseFsmConfig, StateOverride, StateMap } from "fsm-rx";
 import { Observable, Subject } from "rxjs";
 
 
 type BaseConfig = {
     outputStateDiagramDefinition: boolean,
     outputDebugLog: boolean;
+    name: string;
 };
 
 export type BaseFsmComponentConfig = BaseFsmConfig & BaseConfig;
@@ -24,6 +25,11 @@ export class ReactFsmRx<
     TStateData extends BaseStateData<TState>,
     TCanLeaveToStatesMap extends CanLeaveToStatesMap<TState>
 > extends FsmRxConcrete<TState, TStateData, TCanLeaveToStatesMap> {
+
+    public constructor(stateMap: StateMap<TState, TStateData, TCanLeaveToStatesMap>, fsmConfig?: Partial<FsmConfig<TState, TStateData, TCanLeaveToStatesMap>>, isInDevMode?: boolean) {
+        super(stateMap, fsmConfig, isInDevMode);
+    };
+
 
     public override changeState<TCurrentState extends (TState | FSMInit) = TState | FSMInit>(
         stateData: TCurrentState extends (TState | FSMInit) ? ChangeStateData<TState, TCurrentState, TStateData, TCanLeaveToStatesMap> : TStateData
@@ -82,6 +88,7 @@ export class ReactFsmRx<
     ): FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap> {
         return {
             ...super.extractFsmConfig(fsmConfig, isInDevMode),
+            name: fsmConfig.name ?? "",
             outputStateDiagramDefinition: fsmConfig.outputStateDiagramDefinition ?? (isInDevMode ? true : false),
             outputDebugLog: fsmConfig.outputDebugLog ?? (isInDevMode ? true : false),
         };
