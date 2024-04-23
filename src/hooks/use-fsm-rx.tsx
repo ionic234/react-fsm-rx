@@ -100,11 +100,18 @@ export default function useFsmRx<
     useEffect(() => {
         isRemounted.current.next();
         return (() => {
-            //Wait before destroying to make sure we don't remount. This is likely a band-aid 
-            timer(0).pipe(takeUntil(isRemounted.current), takeUntil(getFsmInstance().current.destroy$)).subscribe(() => {
+            if (getFsmInstance().current.isInDevMode) {
+                // Handle hot module replacement 
+                timer(0).pipe(takeUntil(isRemounted.current), takeUntil(getFsmInstance().current.destroy$)).subscribe(() => {
+                    subscription.current = undefined;
+                    getFsmInstance().current.destroy();
+                    fsmRef.current === null;
+                });
+            } else {
                 subscription.current = undefined;
                 getFsmInstance().current.destroy();
-            });
+                fsmRef.current === null;
+            }
         });
     }, [isRemounted]);
 

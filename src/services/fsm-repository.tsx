@@ -1,6 +1,6 @@
 /*eslint-disable*/
 import { BaseStateData, FSMInitStateData, StateData } from "fsm-rx";
-import { BehaviorSubject, Observable, Subject, catchError, debounceTime, filter, of, switchMap, take, takeUntil, timeout } from "rxjs";
+import { BehaviorSubject, Observable, Subject, catchError, debounceTime, filter, of, switchMap, take, takeUntil, tap, timeout } from "rxjs";
 
 type FsmRepositoryStore = {
     [key: string]: Observable<BaseStateData<string> | FSMInitStateData>;
@@ -17,7 +17,6 @@ class FsmRepository {
         stateData$: Observable<StateData<TState, TStateData>>,
         destroy$: Subject<void>
     ): boolean {
-
         const currentStore: FsmRepositoryStore = { ...this._fsmRepositoryStore$.value };
 
         if (currentStore.hasOwnProperty(fsmName)) {
@@ -51,8 +50,8 @@ class FsmRepository {
             takeUntil(destroy$),
             filter((fsmRepositoryStore: FsmRepositoryStore) => { return fsmRepositoryStore.hasOwnProperty(fsmName); }),
             take(1),
-
         );
+
         if (timeoutDuration >= 0) {
             stateData$ = stateData$.pipe(
                 timeout(timeoutDuration),

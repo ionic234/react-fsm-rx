@@ -1,8 +1,8 @@
 /*eslint-disable*/
 
 import deepEqual from "deep-equal";
-import { BaseStateData, CanLeaveToStatesMap, ChangeStateData, CurrentStateInfo, FSMInit, FsmRxConcrete, DebugLogEntry, FsmConfig, BaseFsmConfig, StateOverride, StateMap, StateData } from "fsm-rx";
-import { Observable, Subject, map, switchMap, tap } from "rxjs";
+import { BaseFsmConfig, BaseStateData, CanLeaveToStatesMap, ChangeStateData, CurrentStateInfo, DebugLogEntry, FSMInit, FsmConfig, FsmRxConcrete, StateData, StateMap, StateOverride } from "fsm-rx";
+import { Observable, Subject, map, switchMap, takeUntil, timer } from "rxjs";
 import fsmRepository from '../services/fsm-repository';
 
 type BaseConfig = {
@@ -27,8 +27,20 @@ export class ReactFsmRx<
 
     public constructor(stateMap: StateMap<TState, TStateData, TCanLeaveToStatesMap>, fsmConfig?: Partial<FsmConfig<TState, TStateData, TCanLeaveToStatesMap>>, isInDevMode?: boolean) {
         super(stateMap, fsmConfig, isInDevMode);
-        if (this.resolvedFsmConfig.name) {
-            fsmRepository.addFsmData(this.resolvedFsmConfig.name, this.stateData$, this.destroy$);
+
+
+        if (this.isInDevMode) {
+            // handle Hot module replacement
+            timer(0).pipe(takeUntil(this.destroy$))
+                .subscribe(() => {
+                    if (this.resolvedFsmConfig.name) {
+                        fsmRepository.addFsmData(this.resolvedFsmConfig.name, this.stateData$, this.destroy$);
+                    }
+                });
+        } else {
+            if (this.resolvedFsmConfig.name) {
+                fsmRepository.addFsmData(this.resolvedFsmConfig.name, this.stateData$, this.destroy$);
+            }
         }
     };
 
@@ -61,10 +73,11 @@ export class ReactFsmRx<
 
     public override destroy(): void {
         super.destroy();
-    }
+    };
 
     declare public resolvedFsmConfig: FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>;
 
+    declare public isInDevMode: boolean;
 
     public updateFsmConfig(fsmConfig: Partial<FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>>): [FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>, FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap>] {
         const previousConfig: FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap> = this.resolvedFsmConfig;
@@ -94,7 +107,7 @@ export class ReactFsmRx<
             outputStateDiagramDefinition: fsmConfig.outputStateDiagramDefinition ?? (isInDevMode ? true : false),
             outputDebugLog: fsmConfig.outputDebugLog ?? (isInDevMode ? true : false),
         };
-    }
+    };
 
     /**
    * Determines if an override value has been given and executes the override if it has
