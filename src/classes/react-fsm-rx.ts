@@ -1,14 +1,14 @@
 /*eslint-disable*/
 
 import deepEqual from "deep-equal";
-import { BaseStateData, CanLeaveToStatesMap, ChangeStateData, CurrentStateInfo, FSMInit, FsmRxConcrete, DebugLogEntry, FsmConfig, BaseFsmConfig, StateOverride, StateMap } from "fsm-rx";
-import { Observable, Subject } from "rxjs";
-
+import { BaseStateData, CanLeaveToStatesMap, ChangeStateData, CurrentStateInfo, FSMInit, FsmRxConcrete, DebugLogEntry, FsmConfig, BaseFsmConfig, StateOverride, StateMap, StateData } from "fsm-rx";
+import { Observable, Subject, map, switchMap, tap } from "rxjs";
+import fsmRepository from '../services/fsm-repository';
 
 type BaseConfig = {
     outputStateDiagramDefinition: boolean,
     outputDebugLog: boolean;
-    name: string;
+    name?: string;
 };
 
 export type BaseFsmComponentConfig = BaseFsmConfig & BaseConfig;
@@ -19,7 +19,6 @@ export type FsmComponentConfig<
     TCanLeaveToStatesMap extends CanLeaveToStatesMap<TState>
 > = FsmConfig<TState, TStateData, TCanLeaveToStatesMap> & BaseConfig;
 
-
 export class ReactFsmRx<
     TState extends string,
     TStateData extends BaseStateData<TState>,
@@ -28,6 +27,9 @@ export class ReactFsmRx<
 
     public constructor(stateMap: StateMap<TState, TStateData, TCanLeaveToStatesMap>, fsmConfig?: Partial<FsmConfig<TState, TStateData, TCanLeaveToStatesMap>>, isInDevMode?: boolean) {
         super(stateMap, fsmConfig, isInDevMode);
+        if (this.resolvedFsmConfig.name) {
+            fsmRepository.addFsmData(this.resolvedFsmConfig.name, this.stateData$, this.destroy$);
+        }
     };
 
 
@@ -88,7 +90,7 @@ export class ReactFsmRx<
     ): FsmComponentConfig<TState, TStateData, TCanLeaveToStatesMap> {
         return {
             ...super.extractFsmConfig(fsmConfig, isInDevMode),
-            name: fsmConfig.name ?? "",
+            name: fsmConfig.name ?? undefined,
             outputStateDiagramDefinition: fsmConfig.outputStateDiagramDefinition ?? (isInDevMode ? true : false),
             outputDebugLog: fsmConfig.outputDebugLog ?? (isInDevMode ? true : false),
         };
@@ -118,4 +120,18 @@ export class ReactFsmRx<
         return super.clearStateDiagramDefinition();
     }
 
+    public getFsmStateData$<
+        TStateExternal extends string,
+        TStateDataExternal extends BaseStateData<TStateExternal>
+    >(fsmToBindTo: string, timeoutDuration: number = 0): Observable<[CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>, StateData<TStateExternal, TStateDataExternal> | undefined]> {
+        return fsmRepository.getFsmStateData$<TStateExternal, TStateDataExternal>(fsmToBindTo, this.destroy$, timeoutDuration).pipe(
+            switchMap((externalStateData: StateData<TStateExternal, TStateDataExternal> | undefined): Observable<[CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>, StateData<TStateExternal, TStateDataExternal> | undefined]> => {
+                return this.currentState$.pipe(
+                    map((currentStateInfo: CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>) => {
+                        return [currentStateInfo, externalStateData];
+                    })
+                );
+            })
+        );
+    }
 }

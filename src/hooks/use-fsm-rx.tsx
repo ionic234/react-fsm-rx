@@ -4,7 +4,7 @@ import { BaseStateData, CanLeaveToStatesMap, CurrentStateInfo, DebugLogEntry, FS
 import { MutableRefObject, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Subject, Subscription, takeUntil, timer } from "rxjs";
 import { FsmComponentConfig, ReactFsmRx } from "../classes/react-fsm-rx";
-import fsmRepository from '../services/fsm-repository';
+
 import transformDebugLogService from "../services/transform-debug-log";
 import { FsmRxContext } from "./fsm-rx-context";
 
@@ -46,12 +46,6 @@ export default function useFsmRx<
     const subscribeToFsm = useCallback(() => {
         if (subscription.current === undefined) {
             const fsmRef = getFsmInstance();
-            const fsmName = fsmRef.current.resolvedFsmConfig.name;
-
-            if (fsmName !== "") {
-                fsmRepository.addFsmData(fsmName, fsmRef.current.stateData$, fsmRef.current.destroy$);
-            }
-
             subscription.current = fsmRef.current.stateData$.pipe(takeUntil(fsmRef.current.destroy$)).subscribe((stateData: TStateData | FSMInitStateData) => {
                 if (fsmRef.current === null) { return; }
                 if (fsmRef.current.resolvedFsmConfig.outputStateDiagramDefinition && setStateDiagramDefinition) { setStateDiagramDefinition(fsmRef.current.getStateDiagramDefinition(stateData.state)); }
