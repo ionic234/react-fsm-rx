@@ -15,7 +15,7 @@ interface FsmRxDebugSetProps {
 
 export function FsmRxDebugSet(props: FsmRxDebugSetProps) {
 
-    const [debugLogKeys, setDebugLogKeys] = useState<string[]>(['state']);
+    const [debugLogKeys, setDebugLogKeys] = useState<string[]>(props.debugLogKeys ?? ['state']);
     const [stateDiagramDefinition, setStateDiagramDefinition] = useState<string | undefined>(undefined);
     const [debugLog, setDebugLog] = useState<SimpleDebugEntry[] | undefined>(undefined);
 

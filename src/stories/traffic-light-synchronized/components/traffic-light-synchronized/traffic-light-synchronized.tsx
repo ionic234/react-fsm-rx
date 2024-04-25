@@ -47,10 +47,7 @@ export function TrafficLightSynchronized(props: TrafficLightSynchronizedProps) {
                 canLeaveToStates: { go: true },
             }
         },
-        props,
-        {
-            name: "trafficLight"
-        }
+        props
     );
 
     const bindToExternalFsm = useCallback((fsmToBindTo: string): void => {

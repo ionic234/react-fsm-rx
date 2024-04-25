@@ -51,6 +51,11 @@ export class ReactFsmRx<
         super.changeState(stateData);
     }
 
+    public override updateState(stateData: TStateData): void {
+        super.updateState(stateData);
+    }
+
+
     public override get currentState$(): Observable<CurrentStateInfo<TState, TStateData, TCanLeaveToStatesMap>> {
         return super.currentState$;
     }
@@ -147,4 +152,13 @@ export class ReactFsmRx<
             })
         );
     }
+
+    public override assertCannotReach(x: never): void {
+        super.assertCannotReach(x);
+    }
+
+    public override generateStateTransition(state: TState | "FSMInit", canLeaveTo: (TState | "FSMTerminate")[]): string {
+        return super.generateStateTransition(state, canLeaveTo);
+    }
+
 }
